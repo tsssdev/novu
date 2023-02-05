@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import {
-  ChannelTypeEnum,
-  IConfigCredentials,
-  ILogoFileName,
-  providers,
-  PushProviderIdEnum,
-  EmailProviderIdEnum,
-  InAppProviderIdEnum,
-} from '@novu/shared';
+import { ChannelTypeEnum, IConfigCredentials, ILogoFileName, providers, PushProviderIdEnum } from '@novu/shared';
 import { Modal } from '@mantine/core';
 import * as cloneDeep from 'lodash.clonedeep';
 import PageMeta from '../../components/layout/components/PageMeta';
@@ -126,6 +118,7 @@ export interface IIntegratedProvider {
   caption?: string;
   channel: ChannelTypeEnum;
   credentials: IConfigCredentials[];
+  limits?: ILimits;
   docReference: string;
   comingSoon: boolean;
   active: boolean;
@@ -156,6 +149,10 @@ export interface ICredentials {
   serviceAccount?: string;
 }
 
+export interface ILimits {
+  softLimit: number;
+  hardLimit: number;
+}
 export interface IntegrationEntity {
   _id?: string;
 
@@ -168,6 +165,8 @@ export interface IntegrationEntity {
   channel: ChannelTypeEnum;
 
   credentials: ICredentials;
+
+  limits?: ILimits;
 
   active: boolean;
 
@@ -198,9 +197,10 @@ function initializeProviders(integrations: IntegrationEntity[]): IIntegratedProv
       providerId: providerItem.id,
       integrationId: integration?._id ? integration._id : '',
       displayName: providerItem.displayName,
+      caption: providerItem.caption,
       channel: providerItem.channel,
       credentials: integration?.credentials ? clonedCredentials : providerItem.credentials,
-      caption: providerItem.caption,
+      limits: integration?.limits,
       docReference: providerItem.docReference,
       comingSoon: !!providerItem.comingSoon,
       betaVersion: !!providerItem.betaVersion,
@@ -210,7 +210,6 @@ function initializeProviders(integrations: IntegrationEntity[]): IIntegratedProv
     };
   });
 }
-
 /*
  * temporary patch before migration script
  */

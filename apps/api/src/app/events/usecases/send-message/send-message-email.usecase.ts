@@ -30,6 +30,7 @@ import { SendMessageBase } from './send-message.base';
 import { ApiException } from '../../../shared/exceptions/api.exception';
 import { CompileEmailTemplate } from '../../../content-templates/usecases/compile-email-template/compile-email-template.usecase';
 import { CompileEmailTemplateCommand } from '../../../content-templates/usecases/compile-email-template/compile-email-template.command';
+import { ProviderUsageLimits } from '../../../integrations/usecases/provider-usage-limits';
 
 @Injectable()
 export class SendMessageEmail extends SendMessageBase {
@@ -44,7 +45,8 @@ export class SendMessageEmail extends SendMessageBase {
     protected createExecutionDetails: CreateExecutionDetails,
     private organizationRepository: OrganizationRepository,
     private compileEmailTemplateUsecase: CompileEmailTemplate,
-    protected getDecryptedIntegrationsUsecase: GetDecryptedIntegrations
+    protected getDecryptedIntegrationsUsecase: GetDecryptedIntegrations,
+    private providerUsageLimits: ProviderUsageLimits
   ) {
     super(
       messageRepository,
@@ -59,7 +61,9 @@ export class SendMessageEmail extends SendMessageBase {
     const subscriber = await this.getSubscriber({ _id: command.subscriberId, environmentId: command.environmentId });
     if (!subscriber) throw new ApiException(`Subscriber ${command.subscriberId} not found`);
 
-    const integration = await this.getIntegration(
+    let integration: IntegrationEntity | undefined = undefined;
+
+    integration = await this.getIntegration(
       GetDecryptedIntegrationsCommand.create({
         organizationId: command.organizationId,
         environmentId: command.environmentId,
@@ -69,6 +73,23 @@ export class SendMessageEmail extends SendMessageBase {
         userId: command.userId,
       })
     );
+    if (!integration) {
+      await this.createExecutionDetails.execute(
+        CreateExecutionDetailsCommand.create({
+          ...CreateExecutionDetailsCommand.getDetailsFromJob(command.job),
+          detail: DetailEnum.SUBSCRIBER_NO_ACTIVE_INTEGRATION,
+          source: ExecutionDetailsSourceEnum.INTERNAL,
+          status: ExecutionDetailsStatusEnum.FAILED,
+          isTest: false,
+          isRetry: false,
+        })
+      );
+
+      return;
+    }
+
+    await this.providerUsageLimits.ensureLimitNotReached(integration, command.job);
+
     const emailChannel: NotificationStepEntity = command.step;
     if (!emailChannel) throw new ApiException('Email channel step not found');
     if (!emailChannel.template) throw new ApiException('Email channel template not found');
@@ -84,21 +105,6 @@ export class SendMessageEmail extends SendMessageBase {
     Sentry.addBreadcrumb({
       message: 'Sending Email',
     });
-
-    if (!integration) {
-      await this.createExecutionDetails.execute(
-        CreateExecutionDetailsCommand.create({
-          ...CreateExecutionDetailsCommand.getDetailsFromJob(command.job),
-          detail: DetailEnum.SUBSCRIBER_NO_ACTIVE_INTEGRATION,
-          source: ExecutionDetailsSourceEnum.INTERNAL,
-          status: ExecutionDetailsStatusEnum.FAILED,
-          isTest: false,
-          isRetry: false,
-        })
-      );
-
-      return;
-    }
 
     const overrides = command.overrides[integration?.providerId] || {};
     let html;
@@ -368,6 +374,7 @@ export class SendMessageEmail extends SendMessageBase {
         LogCodeEnum.MAIL_PROVIDER_DELIVERY_ERROR,
         error
       );
+      console.log('error ############', error);
 
       await this.createExecutionDetails.execute(
         CreateExecutionDetailsCommand.create({

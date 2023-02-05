@@ -5,6 +5,10 @@ export function getIntegrations() {
   return api.get('/v1/integrations');
 }
 
+export function getIntegrationMessageCount(providerId: string): Promise<{ messageCount: number }> {
+  return api.get(`/v1/integrations/messages/${providerId}/count`);
+}
+
 export function getActiveIntegrations() {
   return api.get('/v1/integrations/active');
 }

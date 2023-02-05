@@ -3,7 +3,6 @@ import { SharedModule } from '../shared/shared.module';
 import { USE_CASES } from './usecases';
 import { IntegrationsController } from './integrations.controller';
 import { AuthModule } from '../auth/auth.module';
-import { NotificationTemplateModule } from '../notification-template/notification-template.module';
 
 @Module({
   imports: [SharedModule, AuthModule],

@@ -17,9 +17,6 @@ import PageContainer from '../../components/layout/components/PageContainer';
 import { ChannelGroup } from './components/ChannelGroup';
 import { ConnectIntegrationForm } from './components/ConnectIntegrationForm';
 import { useIntegrations } from '../../api/hooks';
-import { When } from '../../components/utils/When';
-import { NovuEmailProviderModal } from './components/NovuEmailProviderModal';
-import { NovuInAppProviderModal } from './components/NovuInAppProviderModal';
 
 export function IntegrationsStore() {
   const { integrations, loading: isLoading, refetch } = useIntegrations();
@@ -84,47 +81,19 @@ export function IntegrationsStore() {
             opened={isModalOpened}
             onClose={() => setModalIsOpened(false)}
           >
-            <When truthy={!provider?.novu}>
-              <ConnectIntegrationForm
-                onClose={() => setModalIsOpened(false)}
-                provider={provider}
-                showModal={handlerShowModal}
-                createModel={isCreateIntegrationModal}
-              />
-            </When>
-            <When truthy={provider?.providerId === EmailProviderIdEnum.Novu}>
-              <NovuEmailProviderModal onClose={() => setModalIsOpened(false)} />
-            </When>
-            <When truthy={provider?.providerId === InAppProviderIdEnum.Novu}>
-              <NovuInAppProviderModal onClose={() => setModalIsOpened(false)} />
-            </When>
+            <ConnectIntegrationForm
+              onClose={() => setModalIsOpened(false)}
+              provider={provider}
+              showModal={handlerShowModal}
+              createModel={isCreateIntegrationModal}
+            />
           </Modal>
 
           <ContentWrapper>
-            <ChannelGroup
-              channel={ChannelTypeEnum.EMAIL}
-              providers={emailProviders}
-              title="Email"
-              onProviderClick={handlerVisible}
-            />
-            <ChannelGroup
-              channel={ChannelTypeEnum.SMS}
-              providers={smsProvider}
-              title="SMS"
-              onProviderClick={handlerVisible}
-            />
-            <ChannelGroup
-              channel={ChannelTypeEnum.CHAT}
-              providers={chatProvider}
-              title="Chat"
-              onProviderClick={handlerVisible}
-            />
-            <ChannelGroup
-              channel={ChannelTypeEnum.PUSH}
-              providers={pushProvider}
-              title="Push"
-              onProviderClick={handlerVisible}
-            />
+            <ChannelGroup providers={emailProviders} title="Email" onProviderClick={handlerVisible} />
+            <ChannelGroup providers={smsProvider} title="SMS" onProviderClick={handlerVisible} />
+            <ChannelGroup providers={chatProvider} title="Chat" onProviderClick={handlerVisible} />
+            <ChannelGroup providers={pushProvider} title="Push" onProviderClick={handlerVisible} />
           </ContentWrapper>
         </PageContainer>
       ) : null}

@@ -10,7 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ChannelTypeEnum, IJwtPayload, MemberRoleEnum } from '@novu/shared';
+import { IJwtPayload, MemberRoleEnum } from '@novu/shared';
 import { JwtAuthGuard } from '../auth/framework/auth.guard';
 import { UserSession } from '../shared/framework/user.decorator';
 import { CreateIntegration } from './usecases/create-integration/create-integration.usecase';
@@ -30,8 +30,6 @@ import { IntegrationResponseDto } from './dtos/integration-response.dto';
 import { ExternalApiAccessible } from '../auth/framework/external-api.decorator';
 import { GetWebhookSupportStatus } from './usecases/get-webhook-support-status/get-webhook-support-status.usecase';
 import { GetWebhookSupportStatusCommand } from './usecases/get-webhook-support-status/get-webhook-support-status.command';
-import { CalculateLimitNovuIntegration } from './usecases/calculate-limit-novu-integration';
-import { CalculateLimitNovuIntegrationCommand } from './usecases/calculate-limit-novu-integration/calculate-limit-novu-integration.command';
 
 @Controller('/integrations')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -44,8 +42,7 @@ export class IntegrationsController {
     private getWebhookSupportStatusUsecase: GetWebhookSupportStatus,
     private createIntegrationUsecase: CreateIntegration,
     private updateIntegrationUsecase: UpdateIntegration,
-    private removeIntegrationUsecase: RemoveIntegration,
-    private calculateLimitNovuIntegration: CalculateLimitNovuIntegration
+    private removeIntegrationUsecase: RemoveIntegration
   ) {}
 
   @Get('/')
@@ -174,25 +171,5 @@ export class IntegrationsController {
         integrationId,
       })
     );
-  }
-
-  @Get('/:channelType/limit')
-  async getProviderLimit(
-    @UserSession() user: IJwtPayload,
-    @Param('channelType') channelType: ChannelTypeEnum
-  ): Promise<{ limit: number; count: number }> {
-    const result = await this.calculateLimitNovuIntegration.execute(
-      CalculateLimitNovuIntegrationCommand.create({
-        channelType,
-        organizationId: user.organizationId,
-        environmentId: user.environmentId,
-      })
-    );
-
-    if (!result) {
-      return { limit: 0, count: 0 };
-    }
-
-    return result;
   }
 }

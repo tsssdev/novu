@@ -28,7 +28,6 @@ import {
 } from '../../../execution-details/usecases/create-execution-details/create-execution-details.command';
 import { SendMessageBase } from './send-message.base';
 import { ApiException } from '../../../shared/exceptions/api.exception';
-import { GetNovuIntegration } from '../../../integrations/usecases/get-novu-integration';
 import { CompileEmailTemplate } from '../../../content-templates/usecases/compile-email-template/compile-email-template.usecase';
 import { CompileEmailTemplateCommand } from '../../../content-templates/usecases/compile-email-template/compile-email-template.command';
 
@@ -60,34 +59,16 @@ export class SendMessageEmail extends SendMessageBase {
     const subscriber = await this.getSubscriber({ _id: command.subscriberId, environmentId: command.environmentId });
     if (!subscriber) throw new ApiException(`Subscriber ${command.subscriberId} not found`);
 
-    let integration: IntegrationEntity | undefined = undefined;
-
-    try {
-      integration = await this.getIntegration(
-        GetDecryptedIntegrationsCommand.create({
-          organizationId: command.organizationId,
-          environmentId: command.environmentId,
-          channelType: ChannelTypeEnum.EMAIL,
-          findOne: true,
-          active: true,
-          userId: command.userId,
-        })
-      );
-    } catch (e) {
-      await this.createExecutionDetails.execute(
-        CreateExecutionDetailsCommand.create({
-          ...CreateExecutionDetailsCommand.getDetailsFromJob(command.job),
-          detail: DetailEnum.LIMIT_PASSED_NOVU_INTEGRATION,
-          source: ExecutionDetailsSourceEnum.INTERNAL,
-          status: ExecutionDetailsStatusEnum.FAILED,
-          raw: JSON.stringify({ message: e.message }),
-          isTest: false,
-          isRetry: false,
-        })
-      );
-
-      return;
-    }
+    const integration = await this.getIntegration(
+      GetDecryptedIntegrationsCommand.create({
+        organizationId: command.organizationId,
+        environmentId: command.environmentId,
+        channelType: ChannelTypeEnum.EMAIL,
+        findOne: true,
+        active: true,
+        userId: command.userId,
+      })
+    );
     const emailChannel: NotificationStepEntity = command.step;
     if (!emailChannel) throw new ApiException('Email channel step not found');
     if (!emailChannel.template) throw new ApiException('Email channel template not found');
@@ -346,13 +327,7 @@ export class SendMessageEmail extends SendMessageBase {
     notification: NotificationEntity
   ) {
     const mailFactory = new MailFactory();
-    const mailHandler = mailFactory.getHandler(
-      {
-        ...integration,
-        providerId: GetNovuIntegration.mapProviders(ChannelTypeEnum.EMAIL, integration.providerId),
-      },
-      mailData.from
-    );
+    const mailHandler = mailFactory.getHandler(integration, mailData.from);
 
     try {
       const result = await mailHandler.send(mailData);

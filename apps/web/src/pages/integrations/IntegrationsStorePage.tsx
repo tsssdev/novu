@@ -123,6 +123,7 @@ export interface IIntegratedProvider {
   providerId: string;
   integrationId: string;
   displayName: string;
+  caption?: string;
   channel: ChannelTypeEnum;
   credentials: IConfigCredentials[];
   docReference: string;
@@ -199,6 +200,7 @@ function initializeProviders(integrations: IntegrationEntity[]): IIntegratedProv
       displayName: providerItem.displayName,
       channel: providerItem.channel,
       credentials: integration?.credentials ? clonedCredentials : providerItem.credentials,
+      caption: providerItem.caption,
       docReference: providerItem.docReference,
       comingSoon: !!providerItem.comingSoon,
       betaVersion: !!providerItem.betaVersion,

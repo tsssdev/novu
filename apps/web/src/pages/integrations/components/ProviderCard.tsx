@@ -40,12 +40,11 @@ export function ProviderCard({
         }
       }}
     >
-      <When truthy={provider.comingSoon || provider.betaVersion}>
+      <When truthy={provider.comingSoon || provider.betaVersion || provider.caption}>
         <RibbonWrapper>
-          <Ribbon>{provider.comingSoon ? 'COMING SOON' : 'BETA'}</Ribbon>
+          <Ribbon>{provider.comingSoon ? 'COMING SOON' : provider.caption ? provider.caption : 'BETA'}</Ribbon>
         </RibbonWrapper>
       </When>
-
       <StyledGroup position="apart">
         <CardHeader>
           <Logo src={logoSrc} alt={provider.displayName} />
